@@ -12,7 +12,8 @@ def get_image_webcam():
     return image
 
 
-def transform_board(image):
+def transform_board(image, save=False):
+    path = "./images/"
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     cimg = cv2.medianBlur(gray, 5)
 
@@ -24,7 +25,9 @@ def transform_board(image):
     circles = np.round(circles[0, :]).astype("int")
     for (x, y, r) in circles:
         if(y <= 200):
-            cv2.circle(image, (x, y), r, (0, 255, 0), 2)
+            img = cv2.circle(image, (x, y), r, (0, 255, 0), 2)
+            if save:
+                cv2.imwrite("{}{}.png".format(path, x), img)
 
     return image
 
