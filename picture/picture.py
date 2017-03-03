@@ -8,7 +8,7 @@ def get_image_webcam():
     # file = "./images/webcam/test_image.png"
     # cv2.imwrite(file, img)
     cv2.waitKey(0)
-    del(cam)
+    cam.release()
     return image
 
 
@@ -25,5 +25,25 @@ def transform_board(image):
     for (x, y, r) in circles:
         cv2.circle(image, (x, y), r, (0, 255, 0), 2)
 
-    cv2.imshow("output transform", image)
-    cv2.waitKey(0)
+    return image
+
+
+def display_picture(image):
+        cv2.imshow("output transform", image)
+        cv2.waitKey(0)
+
+
+def transform_video():
+    cap = cv2.VideoCapture(1)
+
+    while(True):
+        # Capture frame-by-frame
+        ret, frame = cap.read()
+
+        # Display the resulting frame
+        cv2.imshow('frame', transform_board(frame))
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
