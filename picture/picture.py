@@ -17,13 +17,14 @@ def transform_board(image):
     cimg = cv2.medianBlur(gray, 5)
 
     circles = cv2.HoughCircles(cimg, cv2.HOUGH_GRADIENT, 2, 100, param1=50,
-                               param2=30, minRadius=50, maxRadius=55)
+                               param2=30, minRadius=40, maxRadius=55)
     if circles is None:
         return False
 
     circles = np.round(circles[0, :]).astype("int")
     for (x, y, r) in circles:
-        cv2.circle(image, (x, y), r, (0, 255, 0), 2)
+        if(y <= 200):
+            cv2.circle(image, (x, y), r, (0, 255, 0), 2)
 
     return image
 
