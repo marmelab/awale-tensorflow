@@ -14,7 +14,9 @@ def get_image_webcam():
 
 def transform_board(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 75)
+
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 2, 100,
+                               minRadius=30, maxRadius=60)
     if circles is None:
         return False
 
