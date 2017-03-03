@@ -4,7 +4,7 @@ install:
 run:
 	python3 launcher.py $(COMMAND_ARGS)
 
-# Utility commands used to pass some arguments (COMMAND_ARGS) to following commands docker
+# Utility commands used to pass some arguments (COMMAND_ARGS)
 SUPPORTED_COMMANDS := run
 SUPPORTS_MAKE_ARGS := $(findstring $(firstword $(MAKECMDGOALS)), $(SUPPORTED_COMMANDS))
 ifneq "$(SUPPORTS_MAKE_ARGS)" ""
