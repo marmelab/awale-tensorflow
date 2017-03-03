@@ -5,8 +5,6 @@ import cv2
 def get_image_webcam():
     cam = cv2.VideoCapture(1)
     s, image = cam.read()
-    # file = "./images/webcam/test_image.png"
-    # cv2.imwrite(file, img)
     cv2.waitKey(0)
     cam.release()
     return image
