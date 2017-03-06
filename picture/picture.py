@@ -54,6 +54,7 @@ def crop_picture(image, x, y):
                   min(image.shape[1], x+cropSize[1]//2))
     return image[cropCoords[0]:cropCoords[1], cropCoords[2]:cropCoords[3]]
 
+
 def display_picture(image):
         cv2.imshow("output transform", image)
         cv2.waitKey(0)
