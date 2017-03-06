@@ -3,6 +3,7 @@ import cv2
 import uuid
 import os
 
+
 def get_image_webcam():
     cam = cv2.VideoCapture(1)
     s, image = cam.read()
