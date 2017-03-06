@@ -11,14 +11,13 @@ def get_image_webcam():
     return image
 
 
-def transform_board(image, numberPebble, save=False):
+def transform_board(image, numberPebble="None", save=False):
     path = "./images/{}".format(numberPebble)
     if not os.path.exists(path):
         os.makedirs(path)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     cimg = cv2.medianBlur(gray, 5)
-
     circles = cv2.HoughCircles(cimg, cv2.HOUGH_GRADIENT, 2, 100, param1=50,
                                param2=30, minRadius=40, maxRadius=55)
     if circles is None:
