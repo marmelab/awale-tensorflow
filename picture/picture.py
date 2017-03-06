@@ -12,6 +12,7 @@ def get_image_webcam():
 
 def transform_board(image, save=False):
     path = "./images/"
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     cimg = cv2.medianBlur(gray, 5)
 
@@ -20,12 +21,27 @@ def transform_board(image, save=False):
     if circles is None:
         return False
 
+    edges = cv2.Canny(gray, 50, 200)
+    lines = cv2.HoughLinesP(edges, 1, np.pi/180, 50,
+                            minLineLength=150, maxLineGap=10)
+    if lines is None:
+        return False
+
+    x1, y1, x2, y2 = lines[0][0]
+    cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
     circles = np.round(circles[0, :]).astype("int")
+    # averageX = np.average(circles[:, 0])
+    # averageY = np.average(circles[:, 1])
+    # print(circles)
+    # print(averageX)
+    # print(averageY)
+
     for (x, y, r) in circles:
-        if(y <= 200):
-            img = cv2.circle(image, (x, y), r, (0, 255, 0), 2)
+            cv2.circle(image, (x, y), r, (0, 255, 0), 2)
+            cv2.circle(image, (x, y), 2, (0, 0, 255), 3)
             if save:
-                cv2.imwrite("{}{}.png".format(path, x), img)
+                cv2.imwrite("{}{}.png".format(path, x), image)
 
     return image
 
