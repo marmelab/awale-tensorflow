@@ -65,11 +65,11 @@ def detect_and_crop_pit_video():
     while(True):
         ret, frame = cap.read()
         cv2.imshow('frame', detect_and_crop_pit(frame))
-        if is_user_press_q():
+        if is_q_pressed():
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
-def is_user_press_q():
+def is_q_pressed():
     return cv2.waitKey(1) & 0xFF == ord('q')
