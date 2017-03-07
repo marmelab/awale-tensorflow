@@ -4,16 +4,20 @@ import uuid
 import os
 
 
+def get_webcam_port():
+    return 1
+
+
 def get_image_webcam():
-    cam = cv2.VideoCapture(1)
+    cam = cv2.VideoCapture(get_webcam_port())
     s, image = cam.read()
     cam.release()
     return image
 
 
 def detect_and_crop_pit(image, number_pebble="None", save=False):
-    path_save_image = os.path_save_image.join("./images/", number_pebble)
-    if not os.path_save_image.exists(path_save_image):
+    path_save_image = os.path.join("images", number_pebble)
+    if not os.path.exists(path_save_image):
         os.makedirs(path_save_image)
 
     gray = get_gray_picture_with_blur(image)
@@ -26,7 +30,8 @@ def detect_and_crop_pit(image, number_pebble="None", save=False):
     for (x, y, r) in circles:
         if save:
             crop_image = crop_picture(image, x, y)
-            cv2.imwrite(os.path_save_image.join(path_save_image, "{}.png".format(uuid.uuid1())),
+            cv2.imwrite(os.path.join(path_save_image,
+                        "{}.png".format(uuid.uuid1())),
                         crop_image)
         else:
             cv2.circle(image, (x, y), r, (0, 255, 0), 2)
@@ -60,8 +65,11 @@ def detect_and_crop_pit_video():
     while(True):
         ret, frame = cap.read()
         cv2.imshow('frame', detect_and_crop_pit(frame))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if is_user_press_q():
             break
 
     cap.release()
     cv2.destroyAllWindows()
+
+def is_user_press_q():
+    return cv2.waitKey(1) & 0xFF == ord('q')
