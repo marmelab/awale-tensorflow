@@ -2,14 +2,14 @@ import argparse
 from picture import picture
 
 
-def process_image(save, numberPebble):
+def process_image(save, number_pebble):
     image = picture.get_image_webcam()
-    image = picture.transform_board(image, numberPebble, save)
+    image = picture.detect_and_crop_pit(image, number_pebble, save)
     picture.display_picture(image)
 
 
-def process_video():
-    picture.transform_video()
+def display_video():
+    picture.detect_and_crop_pit_video()
 
 
 if __name__ == "__main__":
@@ -21,4 +21,4 @@ if __name__ == "__main__":
     if args["out"] == "image":
         process_image(args["save"], args["number"])
     elif args["out"] == "video":
-        process_video()
+        display_video()
