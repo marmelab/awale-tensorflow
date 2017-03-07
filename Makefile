@@ -4,6 +4,9 @@ install:
 run:
 	python3 launcher.py $(COMMAND_ARGS)
 
+lint:
+	pep8
+
 # Utility commands used to pass some arguments (COMMAND_ARGS)
 SUPPORTED_COMMANDS := run
 SUPPORTS_MAKE_ARGS := $(findstring $(firstword $(MAKECMDGOALS)), $(SUPPORTED_COMMANDS))
