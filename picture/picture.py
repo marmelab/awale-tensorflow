@@ -47,10 +47,10 @@ def get_gray_picture_with_blur(image):
 
 def crop_picture(image, x, y):
     cropSize = (100, 100)
-    cropCoords = (max(0, y-cropSize[0]//2),
-                  min(image.shape[0], y+cropSize[0]//2),
-                  max(0, x-cropSize[1]//2),
-                  min(image.shape[1], x+cropSize[1]//2))
+    cropCoords = (max(0, y - (cropSize[0] // 2)),
+                  min(image.shape[0], y + (cropSize[0] // 2)),
+                  max(0, x - (cropSize[1] // 2)),
+                  min(image.shape[1], x + (cropSize[1] // 2)))
     return image[cropCoords[0]:cropCoords[1], cropCoords[2]:cropCoords[3]]
 
 
