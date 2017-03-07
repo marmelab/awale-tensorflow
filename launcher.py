@@ -1,11 +1,13 @@
 import argparse
 from picture import picture
+import cv2
 
 
 def process_image(save, number_pebble):
     image = picture.get_image_webcam()
     image = picture.detect_and_crop_pit(image, number_pebble, save)
-    picture.display_picture(image)
+    picture.display_picture(image, "Output")
+    cv2.waitKey(0)
 
 
 def display_video():

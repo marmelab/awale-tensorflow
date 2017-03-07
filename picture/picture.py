@@ -54,9 +54,8 @@ def crop_picture(image, x, y):
     return image[cropCoords[0]:cropCoords[1], cropCoords[2]:cropCoords[3]]
 
 
-def display_picture(image):
-        cv2.imshow("output transform", image)
-        cv2.waitKey(0)
+def display_picture(image, title):
+        cv2.imshow(title, image)
 
 
 def detect_and_crop_pit_video():
@@ -70,6 +69,7 @@ def detect_and_crop_pit_video():
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 def is_q_pressed():
     return cv2.waitKey(1) & 0xFF == ord('q')
