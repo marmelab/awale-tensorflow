@@ -35,13 +35,13 @@ def transform_board(image, numberPebble="None", save=False):
 
     circles = np.round(circles[0, :]).astype("int")
     for (x, y, r) in circles:
+        if save:
+            crop_image = crop_picture(image, x, y)
+            cv2.imwrite(os.path.join(path, "{}.png".format(uuid.uuid1())),
+                        crop_image)
+        else:
             cv2.circle(image, (x, y), r, (0, 255, 0), 2)
             cv2.circle(image, (x, y), 2, (0, 0, 255), 3)
-
-            crop_image = crop_picture(image, x, y)
-            if save:
-                cv2.imwrite(os.path.join(path, "{}.png".format(uuid.uuid1())),
-                            crop_image)
 
     return image
 
