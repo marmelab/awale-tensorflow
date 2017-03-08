@@ -21,6 +21,7 @@ if __name__ == "__main__":
     ap.add_argument("-n", "--number")
     args = vars(ap.parse_args())
     if args["out"] == "image":
-        process_image(args["save"], args["number"])
+        number = "None" if args["number"] is None else args["number"]
+        process_image(args["save"], number)
     elif args["out"] == "video":
         display_video()
