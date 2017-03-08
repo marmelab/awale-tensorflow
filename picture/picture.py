@@ -26,6 +26,7 @@ def crop_pit(image, number_pebble="None", save=False):
         os.makedirs(path_save_image)
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.medianBlur(gray, 5)
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 2, 100, param1=50,
                                param2=30, minRadius=40, maxRadius=55)
     if circles is None:
