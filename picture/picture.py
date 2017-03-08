@@ -40,8 +40,28 @@ def detect_and_crop_pit(image, number_pebble="None", save=False):
     return image
 
 
+def crop_board(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # Add mask black on white color
+    lower_blue = np.array([0, 0, 0])
+    upper_blue = np.array([180, 180, 180])
+    mask = cv2.inRange(gray, lower_blue, upper_blue)
+
+    _, cnts, _ = cv2.findContours(mask.copy(), cv2.RETR_TREE,
+                                  cv2.CHAIN_APPROX_SIMPLE)
+
+    # Get first large area
+    cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:1]
+    cv2.drawContours(image, cnts, -1, (0, 255, 0), 2)
+
+    # Draw rectangle and crop
+    x, y, width, height = cv2.boundingRect(cnts[0])
+    return image[y:y+height, x:x+width]
+
+
 def get_gray_picture_with_blur(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     return cv2.medianBlur(gray, 5)
 
 
