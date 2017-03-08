@@ -16,11 +16,16 @@ def get_image_webcam():
 
 
 def detect_and_crop_pit(image, number_pebble="None", save=False):
+    board_image = crop_board(image)
+    return crop_pit(board_image, number_pebble, save)
+
+
+def crop_pit(image, number_pebble="None", save=False):
     path_save_image = os.path.join("images", number_pebble)
     if not os.path.exists(path_save_image):
         os.makedirs(path_save_image)
 
-    gray = get_gray_picture_with_blur(image)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 2, 100, param1=50,
                                param2=30, minRadius=40, maxRadius=55)
     if circles is None:
@@ -34,8 +39,8 @@ def detect_and_crop_pit(image, number_pebble="None", save=False):
                         "{}.png".format(uuid.uuid1())),
                         crop_image)
         else:
-            cv2.circle(image, (x, y), r, (0, 255, 0), 2)
-            cv2.circle(image, (x, y), 2, (0, 0, 255), 3)
+            cv2.circle(image, (x, y), r, (0, 255, 0), 1)
+            cv2.circle(image, (x, y), 2, (0, 0, 255), 2)
 
     return image
 
@@ -53,17 +58,13 @@ def crop_board(image):
 
     # Get first large area
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:1]
-    cv2.drawContours(image, cnts, -1, (0, 255, 0), 2)
+
+    # draw contours if you want debug
+    # cv2.drawContours(image, cnts, -1, (0, 255, 0), 2)
 
     # Draw rectangle and crop
     x, y, width, height = cv2.boundingRect(cnts[0])
     return image[y:y+height, x:x+width]
-
-
-def get_gray_picture_with_blur(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    return cv2.medianBlur(gray, 5)
-
 
 def crop_picture(image, x, y):
     cropSize = (100, 100)
