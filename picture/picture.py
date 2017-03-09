@@ -42,9 +42,6 @@ def crop_pit(image, number_pebble="None", save=False):
 
     circles = np.round(circles[0, :]).astype("int")
     for (x, y, r) in circles:
-        # if y >= 70:
-        #     continue
-
         if save:
             crop_image = crop_picture(image, x, y)
             cv2.imwrite(os.path.join(path_save_image,
