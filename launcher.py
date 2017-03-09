@@ -1,11 +1,13 @@
 import argparse
 from picture import picture
+import cv2
 
 
 def process_image(save, number_pebble):
     image = picture.get_image_webcam()
     image = picture.detect_and_crop_pit(image, number_pebble, save)
-    picture.display_picture(image)
+    picture.display_picture(image, "Output")
+    cv2.waitKey(0)
 
 
 def display_video():
@@ -19,6 +21,7 @@ if __name__ == "__main__":
     ap.add_argument("-n", "--number")
     args = vars(ap.parse_args())
     if args["out"] == "image":
-        process_image(args["save"], args["number"])
+        number = "None" if args["number"] is None else args["number"]
+        process_image(args["save"], number)
     elif args["out"] == "video":
         display_video()
