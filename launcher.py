@@ -1,7 +1,7 @@
 import argparse
 import cv2
 from picture import picture
-from tensorflow import train
+from neural_network import training
 
 
 def process_image(save, number_pebble):
@@ -27,4 +27,5 @@ if __name__ == "__main__":
     elif args["out"] == "video":
         display_video()
     elif args["out"] == "train":
-        print(train.get_all_image_training().get('0'))
+        files = [training.get_all_image_training().get(key) for key in ['0', '1']]
+        training.read_all_file(files)
