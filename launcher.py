@@ -27,4 +27,4 @@ if __name__ == "__main__":
     elif args["out"] == "video":
         display_video()
     elif args["out"] == "train":
-        train.hello()
+        print(train.get_all_image_training().get('0'))
