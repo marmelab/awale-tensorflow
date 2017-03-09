@@ -22,3 +22,8 @@ make run -- -o image
 
 Add `-s` for saving image without border
 Add `-n` for directory name
+
+Tensorflow:
+```
+make run -- -o train
+```
