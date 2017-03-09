@@ -10,7 +10,15 @@ def get_webcam_port():
 
 def get_image_webcam():
     cam = cv2.VideoCapture(get_webcam_port())
-    s, image = cam.read()
+    image = None
+
+    while(True):
+        s, frame = cam.read()
+        cv2.imshow('frame', crop_board(frame))
+        if is_q_pressed():
+            image = frame
+            break
+
     cam.release()
     return image
 
@@ -34,6 +42,9 @@ def crop_pit(image, number_pebble="None", save=False):
 
     circles = np.round(circles[0, :]).astype("int")
     for (x, y, r) in circles:
+        # if y >= 70:
+        #     continue
+
         if save:
             crop_image = crop_picture(image, x, y)
             cv2.imwrite(os.path.join(path_save_image,
@@ -67,6 +78,7 @@ def crop_board(image):
     x, y, width, height = cv2.boundingRect(cnts[0])
     return image[y:y+height, x:x+width]
 
+
 def crop_picture(image, x, y):
     cropSize = (100, 100)
     cropCoords = (max(0, y - (cropSize[0] // 2)),
@@ -81,7 +93,7 @@ def display_picture(image, title):
 
 
 def detect_and_crop_pit_video():
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(get_webcam_port())
 
     while(True):
         ret, frame = cap.read()
