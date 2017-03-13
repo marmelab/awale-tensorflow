@@ -27,5 +27,4 @@ if __name__ == "__main__":
     elif args["out"] == "video":
         display_video()
     elif args["out"] == "train":
-        files = [training.get_all_image_training().get(key) for key in ['0', '1']]
-        training.read_all_file(files)
+        training.run_training()
