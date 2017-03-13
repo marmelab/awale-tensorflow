@@ -58,15 +58,23 @@ def get_training_image_label():
     return train_images, zero_labels
 
 
+def cal_loss(labels, logits):
+    return tf.contrib.losses.softmax_cross_entropy(logits, labels)
+    return tf.reduce_mean(
+        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
+                                                       logits=logits))
+
+
+def training(loss, learning_rate):
+    return tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+
+
 def run_training():
     train_images, train_labels = get_training_image_label()
-    print(len(train_images), len(train_labels))
-    print(len(train_images[0]), len(train_labels[0]))
-
     x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
     W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
     b = tf.Variable(tf.zeros(IMAGE_RESULT))
-    y = tf.matmul(x, W) + b
+    y = tf.add(tf.matmul(x, W), b)
 
     # Define loss and optimizer
     y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
@@ -96,10 +104,11 @@ def run_training():
         sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
 
     # Test trained model
-    # correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-    # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    # print(sess.run(accuracy, feed_dict={x: train_images[0][0],
-    #                                     y_: train_labels[0]}))
+    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    print(accuracy, correct_prediction)
+    print(sess.run(accuracy, feed_dict={x: train_images[0][0],
+                                        y_: train_labels[0]}))
 
 
 def multilayer_network(images, hidden1_units, hidden2_units):
@@ -132,13 +141,3 @@ def multilayer_network(images, hidden1_units, hidden2_units):
     out_layer = tf.matmul(hidden2, weights) + biases
 
     return out_layer
-
-
-def cal_loss(labels, loss):
-    return tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
-                                                       logits=loss))
-
-
-def training(loss, learning_rate):
-    return tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
