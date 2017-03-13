@@ -101,7 +101,7 @@ def run_training():
 def placeholder_inputs(batch_size):
     images_placeholder = tf.placeholder(tf.float32,
                                         shape=(batch_size, IMAGE_PIXELS))
-    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size, None))
+    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
     return images_placeholder, labels_placeholder
 
 
