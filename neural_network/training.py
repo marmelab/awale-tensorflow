@@ -15,10 +15,9 @@ flags.DEFINE_integer('batch_size', 4, 'Batch size.  '
                      'Must divide evenly into the dataset sizes.')
 flags.DEFINE_string('train_dir', 'data', 'Directory to put the training data.')
 
-NUM_CLASSES = 2
+IMAGE_RESULT = 16
 IMAGE_SIZE = 100
-CHANNELS = 3
-IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * CHANNELS
+IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * 3
 
 
 def get_all_image_training():
@@ -41,68 +40,66 @@ def get_training_image_label():
     train_labels = []
 
     for label, filenames in get_all_image_training().items():
-        train_labels.append(label)
         for filename in filenames:
             image = Image.open(filename)
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
             train_images.append(np.array(image))
+            train_labels.append(int(label))
 
     train_images = np.array(train_images)
-    return train_images, np.array(train_labels)
+    train_images = train_images.reshape(len(train_images), IMAGE_PIXELS)
+
+    train_labels = np.array(train_labels)
+    zero_labels = np.zeros((len(train_images), IMAGE_RESULT))
+
+    for i, _ in enumerate(train_images):
+        zero_labels[i][train_labels[i]] = 1
+
+    return train_images, zero_labels
 
 
 def run_training():
     train_images, train_labels = get_training_image_label()
+    print(len(train_images), len(train_labels))
+    print(len(train_images[0]), len(train_labels[0]))
 
-    # Generate placeholders for the images and labels.
-    images_placeholder, labels_placeholder = placeholder_inputs(len(train_images))
+    x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
+    W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
+    b = tf.Variable(tf.zeros(IMAGE_RESULT))
+    y = tf.matmul(x, W) + b
+
+    # Define loss and optimizer
+    y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+
+    print("x", x)
+    print("W", W)
+    print("b", b)
+    print("y", y)
+    print("y_", y_)
 
     # Construct model
-    logits = multilayer_network(images_placeholder,
-                                FLAGS.hidden1, FLAGS.hidden2)
+    # logits = multilayer_network(train_images,
+    #                             FLAGS.hidden1, FLAGS.hidden2)
 
-    # Backward propagation
     # Add to the Graph the Ops for loss calculation.
-    loss = cal_loss(logits, labels_placeholder)
+    loss = cal_loss(y_, y)
 
     # Add to the Graph the Ops that calculate and apply gradients.
     train_op = training(loss, FLAGS.learning_rate)
-
-    # Add the Op to compare the logits to the labels during evaluation.
-    eval_correct = evaluation(logits, labels_placeholder)
-
-    # Create a saver for writing training checkpoints.
-    saver = tf.train.Saver()
 
     # Create a session for running Ops on the Graph.
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
 
-    # for step in range(FLAGS.max_steps):
-    #     feed_dict = fill_feed_dict(train_images, train_labels,
-    #                                images_placeholder,
-    #                                labels_placeholder)
-    #
-    #     _, loss_value = sess.run(train_op, feed_dict=feed_dict)
-    #     if step % 100 == 0:
-    #         # Print status to stdout.
-    #         print('Step %d: loss = %.2f' % (step, loss_value))
-    #         if (step + 1) % 1000 == 0 or (step + 1) == FLAGS.max_steps:
-    #             saver.save(sess, FLAGS.train_dir, global_step=step)
-    #             print('Training Data Eval:')
-    #             do_eval(sess,
-    #                     eval_correct,
-    #                     images_placeholder,
-    #                     labels_placeholder,
-    #                     train_images,
-    #                     train_labels)
+    # Train
+    for _ in range(FLAGS.max_steps):
+        sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
 
-
-def placeholder_inputs(batch_size):
-    images_placeholder = tf.placeholder(tf.float32,
-                                        shape=(batch_size, IMAGE_PIXELS))
-    labels_placeholder = tf.placeholder(tf.int32, shape=(batch_size))
-    return images_placeholder, labels_placeholder
+    # Test trained model
+    # correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+    # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    # print(sess.run(accuracy, feed_dict={x: train_images[0][0],
+    #                                     y_: train_labels[0]}))
 
 
 def multilayer_network(images, hidden1_units, hidden2_units):
@@ -137,38 +134,11 @@ def multilayer_network(images, hidden1_units, hidden2_units):
     return out_layer
 
 
-def cal_loss(loss, labels):
+def cal_loss(labels, loss):
     return tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=loss,
-                                                       labels=labels))
+        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
+                                                       logits=loss))
 
 
 def training(loss, learning_rate):
     return tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-
-
-def evaluation(logits, labels):
-    correct = tf.nn.in_top_k(logits, labels, 1)
-    return tf.reduce_sum(tf.cast(correct, tf.int32))
-
-
-def fill_feed_dict(images_feed, labels_feed, images_pl, labels_pl):
-    feed_dict = {
-        images_pl: images_feed,
-        labels_pl: labels_feed,
-    }
-    return feed_dict
-
-def do_eval(sess, eval_correct, images_placeholder, labels_placeholder,
-            train_images, train_labels):
-    true_count = 0  # Counts the number of correct predictions.
-    steps_per_epoch = 4 // FLAGS.batch_size
-    num_examples = steps_per_epoch * FLAGS.batch_size
-    for step in range(steps_per_epoch):
-        feed_dict = fill_feed_dict(train_images, train_labels,
-                                   images_placeholder,
-                                   labels_placeholder)
-        true_count += sess.run(eval_correct, feed_dict=feed_dict)
-        precision = true_count / num_examples
-        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
-              (num_examples, true_count, precision))
