@@ -11,35 +11,30 @@ flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 2000, 'Number of steps to run trainer.')
 flags.DEFINE_integer('hidden1', 128, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 32, 'Number of units in hidden layer 2.')
-flags.DEFINE_integer('batch_size', 4, 'Batch size.  '
-                     'Must divide evenly into the dataset sizes.')
-flags.DEFINE_string('train_dir', 'data', 'Directory to put the training data.')
 
+NUM_CLASSES = 2
 IMAGE_RESULT = 16
 IMAGE_SIZE = 100
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * 3
 
 
-def get_all_image_training():
-    dico = {}
+def get_all_image_training(path):
+    dico_images = {}
 
-    for filename in glob.iglob('images/**/*.png', recursive=True):
+    for filename in glob.iglob(path, recursive=True):
         directory_name = os.path.basename(os.path.dirname(filename))
-        if directory_name != '1':
-            continue
+        if directory_name not in dico_images:
+            dico_images[directory_name] = []
 
-        if directory_name not in dico:
-            dico[directory_name] = []
-
-        dico[directory_name].append(filename)
-    return dico
+        dico_images[directory_name].append(filename)
+    return dico_images
 
 
-def get_training_image_label():
+def get_training_image_label(path):
     train_images = []
     train_labels = []
 
-    for label, filenames in get_all_image_training().items():
+    for label, filenames in get_all_image_training(path).items():
         for filename in filenames:
             image = Image.open(filename)
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
@@ -60,9 +55,6 @@ def get_training_image_label():
 
 def cal_loss(labels, logits):
     return tf.contrib.losses.softmax_cross_entropy(logits, labels)
-    return tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
-                                                       logits=logits))
 
 
 def training(loss, learning_rate):
@@ -70,7 +62,7 @@ def training(loss, learning_rate):
 
 
 def run_training():
-    train_images, train_labels = get_training_image_label()
+    train_images, train_labels = get_training_image_label('images/**/*.png')
     x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
     W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
     b = tf.Variable(tf.zeros(IMAGE_RESULT))
@@ -79,14 +71,9 @@ def run_training():
     # Define loss and optimizer
     y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 
-    print("x", x)
-    print("W", W)
-    print("b", b)
-    print("y", y)
-    print("y_", y_)
-
+    # todo need more test
     # Construct model
-    # logits = multilayer_network(train_images,
+    # predict = multilayer_network(train_images,
     #                             FLAGS.hidden1, FLAGS.hidden2)
 
     # Add to the Graph the Ops for loss calculation.
@@ -106,7 +93,6 @@ def run_training():
     # Test trained model
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    print(accuracy, correct_prediction)
     print(sess.run(accuracy, feed_dict={x: train_images,
                                         y_: train_labels}))
 
