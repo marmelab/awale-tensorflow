@@ -107,8 +107,8 @@ def run_training():
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     print(accuracy, correct_prediction)
-    print(sess.run(accuracy, feed_dict={x: train_images[0][0],
-                                        y_: train_labels[0]}))
+    print(sess.run(accuracy, feed_dict={x: train_images,
+                                        y_: train_labels}))
 
 
 def multilayer_network(images, hidden1_units, hidden2_units):
