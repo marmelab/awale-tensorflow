@@ -95,16 +95,7 @@ def training(loss, learning_rate):
 
 
 def get_pebble_count(predictions):
-    score = float('-inf')
-    pebble = -1
-    for index, prediction in enumerate(predictions[0]):
-        if prediction > score:
-            score = prediction
-            pebble = index
-
-    print(pebble, score)
-    print(predictions)
-    return pebble  # np.argmax(enumerate(predictions[0][0]))
+    return np.argmax(predictions[0])
 
 
 def run_training():
