@@ -140,6 +140,16 @@ def get_pebble_count(predictions):
     return np.argmax(predictions[0])
 
 
+def restore_session():
+    try:
+        saver.restore(sess, './saved_graphs/awale')
+        print("Restored graph file")
+        return True
+    except Exception:
+        print("Cannot restore graph file", "Run 'make run -- -t'")
+        return False
+
+
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
@@ -154,12 +164,11 @@ def run_training():
 def display_count_pebble():
     test_images = get_test_images('board_images/*.png')
 
-    try:
-        saver.restore(sess, './saved_graphs/awale')
-        print("Restored graph file")
-    except Exception:
-        print("Cannot restore graph file")
+    sucess = restore_session()
+    if not sucess:
+        return
 
+    # Run trained model
     correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
@@ -172,11 +181,9 @@ def display_count_pebble():
 def display_accuracy():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
-    try:
-        saver.restore(sess, './saved_graphs/awale')
-        print("Restored graph file")
-    except Exception:
-        print("Cannot restore graph file")
+    sucess = restore_session()
+    if not sucess:
+        return
 
     # Test trained model
     correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y_, 1))
