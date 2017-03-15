@@ -122,10 +122,19 @@ def run_training():
     # Create a session for running Ops on the Graph.
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
+    saver = tf.train.Saver()
+
+    try:
+        saver.restore(sess, './saved_graphs/awale')
+        print("Restored graph file")
+    except Exception:
+        print("Cannot restore graph file")
 
     # Train
     for _ in range(FLAGS.max_steps):
         sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
+
+    saver.save(sess, './saved_graphs/awale')
 
     # Test trained model
     correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y, 1))
