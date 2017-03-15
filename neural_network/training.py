@@ -53,7 +53,7 @@ def get_training_images_and_labels(path):
     return train_images, zero_labels
 
 
-def cal_loss(labels, logits):
+def calculation_loss(labels, logits):
     return tf.contrib.losses.softmax_cross_entropy(logits, labels)
 
 
@@ -76,7 +76,7 @@ def run_training():
     #                             FLAGS.hidden1, FLAGS.hidden2)
 
     # Add to the Graph the Ops for loss calculation.
-    loss = cal_loss(y_, y)
+    loss = calculation_loss(y_, y)
 
     # Add to the Graph the Ops that calculate and apply gradients.
     train_op = training(loss, FLAGS.learning_rate)
