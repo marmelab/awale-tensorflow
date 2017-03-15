@@ -19,15 +19,15 @@ IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * 3
 
 
 def get_all_image_training(path):
-    dico_images = {}
+    images_dictionary = {}
 
     for filename in glob.iglob(path, recursive=True):
         directory_name = os.path.basename(os.path.dirname(filename))
-        if directory_name not in dico_images:
-            dico_images[directory_name] = []
+        if directory_name not in images_dictionary:
+            images_dictionary[directory_name] = []
 
-        dico_images[directory_name].append(filename)
-    return dico_images
+        images_dictionary[directory_name].append(filename)
+    return images_dictionary
 
 
 def get_training_image_label(path):
