@@ -20,11 +20,18 @@ if __name__ == "__main__":
     ap.add_argument("-o", "--out")
     ap.add_argument("-s", "--save", action='store_true')
     ap.add_argument("-n", "--number")
+    ap.add_argument("-t", "--train", action='store_true')
+    ap.add_argument("-a", "--accuracy", action='store_true')
+    ap.add_argument("-r", "--run", action='store_true')
     args = vars(ap.parse_args())
     if args["out"] == "image":
         number = "None" if args["number"] is None else args["number"]
         process_image(args["save"], number)
     elif args["out"] == "video":
         display_video()
-    elif args["out"] == "train":
+    elif args["train"]:
         training.run_training()
+    elif args["accuracy"]:
+        training.display_accuracy()
+    elif args["run"]:
+        training.display_count_pebble()

@@ -20,10 +20,15 @@ Image:
 make run -- -o image
 ```
 
-Add `-s` for saving image without border
+Add `-s` for saving image without border   
 Add `-n` for directory name
 
 Tensorflow:
 ```
-make run -- -o train
+make run -- -t
+make run -- -a
+make run -- -r
 ```
+Use `-t` for training neural network   
+Use `-a` to display accuracy   
+Use `-r` to display number of pebble in images
