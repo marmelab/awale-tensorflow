@@ -30,7 +30,7 @@ def get_all_image_training(path):
     return images_dictionary
 
 
-def get_training_image_label(path):
+def get_training_images_and_labels(path):
     train_images = []
     train_labels = []
 
@@ -62,7 +62,7 @@ def training(loss, learning_rate):
 
 
 def run_training():
-    train_images, train_labels = get_training_image_label('images/**/*.png')
+    train_images, train_labels = get_training_images_and_labels('images/**/*.png')
     x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
     W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
     b = tf.Variable(tf.zeros(IMAGE_RESULT))
@@ -71,7 +71,6 @@ def run_training():
     # Define loss and optimizer
     y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 
-    # todo need more test
     # Construct model
     # predict = multilayer_network(train_images,
     #                             FLAGS.hidden1, FLAGS.hidden2)
