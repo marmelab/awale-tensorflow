@@ -1,6 +1,7 @@
 import argparse
-from picture import picture
 import cv2
+from picture import picture
+from neural_network import training
 
 
 def process_image(save, number_pebble):
@@ -25,3 +26,5 @@ if __name__ == "__main__":
         process_image(args["save"], number)
     elif args["out"] == "video":
         display_video()
+    elif args["out"] == "train":
+        training.run_training()
