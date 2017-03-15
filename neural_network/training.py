@@ -164,8 +164,8 @@ def run_training():
 def display_count_pebble():
     test_images = get_test_images('board_images/*.png')
 
-    sucess = restore_session()
-    if not sucess:
+    success = restore_session()
+    if not success:
         return
 
     # Run trained model
@@ -181,8 +181,8 @@ def display_count_pebble():
 def display_accuracy():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
-    sucess = restore_session()
-    if not sucess:
+    success = restore_session()
+    if not success:
         return
 
     # Test trained model
