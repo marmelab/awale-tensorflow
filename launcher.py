@@ -32,6 +32,6 @@ if __name__ == "__main__":
     elif args["train"]:
         training.run_training()
     elif args["accuracy"]:
-        training.get_accuracy()
+        training.display_accuracy()
     elif args["run"]:
-        training.run()
+        training.display_count_pebble()

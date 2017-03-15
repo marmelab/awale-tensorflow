@@ -39,6 +39,57 @@ hidden_layers = [
     },
 ]
 
+x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
+W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
+b = tf.Variable(tf.zeros(IMAGE_RESULT))
+y = tf.add(tf.matmul(x, W), b)
+
+# Define loss and optimizer
+y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+
+
+def multilayer_network(x, hidden_layers):
+    previous_size = IMAGE_PIXELS
+    previous_layer = x
+    for layer in hidden_layers:
+        layer_size = layer['neurons']
+        layer['weights'] = tf.Variable(tf.random_normal([previous_size, layer_size]))
+        layer['biases'] = tf.Variable(tf.random_normal([layer_size]))
+
+        layer['predict'] = tf.add(tf.matmul(previous_layer, layer['weights']), layer['biases'])
+
+        if 'activation_function' in layer:
+            if layer['activation_function'] == 'sigmoid':
+                layer['predict'] = tf.sigmoid(layer['predict'])
+            elif layer['activation_function'] == 'tanh':
+                layer['predict'] = tf.tanh(layer['predict'])
+            elif layer['activation_function'] == 'softmax':
+                layer['predict'] = tf.nn.softmax(layer['predict'])
+
+        if 'dropout' in layer:
+            dropout = tf.constant(layer['dropout'])
+            layer['predict'] = tf.nn.dropout(layer['predict'], dropout)
+
+        previous_size = layer_size
+        previous_layer = layer['predict']
+
+    return hidden_layers[-1]['predict']
+
+
+# Construct model
+predict = multilayer_network(x, hidden_layers)
+
+# Add to the Graph the Ops for loss calculation.
+loss = tf.contrib.losses.softmax_cross_entropy(predict, y)
+
+# Add to the Graph the Ops that calculate and apply gradients.
+train_op = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
+
+# Create a session for running Ops on the Graph.
+sess = tf.InteractiveSession()
+tf.global_variables_initializer().run()
+saver = tf.train.Saver()
+
 
 def get_test_images(path):
     images = []
@@ -85,44 +136,23 @@ def get_training_images_and_labels(path):
 
     return train_images, zero_labels
 
-
-def calculation_loss(labels, logits):
-    return tf.contrib.losses.softmax_cross_entropy(logits, labels)
-
-
-def training(loss, learning_rate):
-    return tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-
-
 def get_pebble_count(predictions):
     return np.argmax(predictions[0])
 
 
 def run_training():
-    test_images = get_test_images('board_images/*.png')
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
-    x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
-    W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
-    b = tf.Variable(tf.zeros(IMAGE_RESULT))
-    y = tf.add(tf.matmul(x, W), b)
+    # Train
+    for _ in range(FLAGS.max_steps):
+        sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
 
-    # Define loss and optimizer
-    y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+    saver.save(sess, './saved_graphs/awale')
+    print("Saving session graph")
 
-    # Construct model
-    predict = multilayer_network(x, hidden_layers)
 
-    # Add to the Graph the Ops for loss calculation.
-    loss = calculation_loss(predict, y)
-
-    # Add to the Graph the Ops that calculate and apply gradients.
-    train_op = training(loss, FLAGS.learning_rate)
-
-    # Create a session for running Ops on the Graph.
-    sess = tf.InteractiveSession()
-    tf.global_variables_initializer().run()
-    saver = tf.train.Saver()
+def display_count_pebble():
+    test_images = get_test_images('board_images/*.png')
 
     try:
         saver.restore(sess, './saved_graphs/awale')
@@ -130,13 +160,6 @@ def run_training():
     except Exception:
         print("Cannot restore graph file")
 
-    # Train
-    for _ in range(FLAGS.max_steps):
-        sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
-
-    saver.save(sess, './saved_graphs/awale')
-
-    # Test trained model
     correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', accuracy)
@@ -146,29 +169,16 @@ def run_training():
     print(number_pebble)
 
 
-def multilayer_network(x, hidden_layers):
-    previous_size = IMAGE_PIXELS
-    previous_layer = x
-    for layer in hidden_layers:
-        layer_size = layer['neurons']
-        layer['weights'] = tf.Variable(tf.random_normal([previous_size, layer_size]))
-        layer['biases'] = tf.Variable(tf.random_normal([layer_size]))
+def display_accuracy():
+    train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
-        layer['predict'] = tf.add(tf.matmul(previous_layer, layer['weights']), layer['biases'])
+    try:
+        saver.restore(sess, './saved_graphs/awale')
+        print("Restored graph file")
+    except Exception:
+        print("Cannot restore graph file")
 
-        if 'activation_function' in layer:
-            if layer['activation_function'] == 'sigmoid':
-                layer['predict'] = tf.sigmoid(layer['predict'])
-            elif layer['activation_function'] == 'tanh':
-                layer['predict'] = tf.tanh(layer['predict'])
-            elif layer['activation_function'] == 'softmax':
-                layer['predict'] = tf.nn.softmax(layer['predict'])
-
-        if 'dropout' in layer:
-            dropout = tf.constant(layer['dropout'])
-            layer['predict'] = tf.nn.dropout(layer['predict'], dropout)
-
-        previous_size = layer_size
-        previous_layer = layer['predict']
-
-    return hidden_layers[-1]['predict']
+    # Test trained model
+    correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y_, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    print(sess.run(accuracy, feed_dict={x: train_images, y_: train_labels}))
