@@ -5,99 +5,67 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('max_steps', 2000, 'Number of steps to run trainer.')
-
-IMAGE_RESULT = 16
+IMAGE_RESULT = 12
 IMAGE_SIZE = 100
-IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * 3
+IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
-hidden_layers = [
-    {
-        'neurons': 128,
-        'activation_function': 'sigmoid',
-    },
-    {
-        'neurons': 32,
-        'activation_function': 'sigmoid',
-    },
-    {
-        'neurons': IMAGE_RESULT,
-        'activation_function': 'softmax',
-    },
-]
+# input X: 100 grayscale images, the first dimension will index the images in the mini-batch
+X = tf.placeholder(tf.float32, [None, IMAGE_SIZE, IMAGE_SIZE, 1])
+# correct answers will go here
+Y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+# variable learning rate
+lr = tf.placeholder(tf.float32)
+# Probability of keeping a node during dropout = 1.0 at test time (no dropout) and 0.75 at training time
+pkeep = tf.placeholder(tf.float32)
 
-x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS])
-W = tf.Variable(tf.zeros([IMAGE_PIXELS, IMAGE_RESULT]))
-b = tf.Variable(tf.zeros(IMAGE_RESULT))
-y = tf.add(tf.matmul(x, W), b)
+# three convolutional layers with their channel counts, and a
+# fully connected layer (tha last layer has 16 softmax neurons)
+K = 6  # first convolutional layer output depth
+L = 12  # second convolutional layer output depth
+M = 24  # third convolutional layer
+N = 200  # fully connected layer
 
-# Define loss and optimizer
-y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+W1 = tf.Variable(tf.truncated_normal([6, 6, 1, K], stddev=0.1))  # 6x6 patch, 1 input channel, K output channels
+B1 = tf.Variable(tf.constant(0.1, tf.float32, [K]))
+W2 = tf.Variable(tf.truncated_normal([5, 5, K, L], stddev=0.1))
+B2 = tf.Variable(tf.constant(0.1, tf.float32, [L]))
+W3 = tf.Variable(tf.truncated_normal([4, 4, L, M], stddev=0.1))
+B3 = tf.Variable(tf.constant(0.1, tf.float32, [M]))
 
+W4 = tf.Variable(tf.truncated_normal([7 * 7 * M, N], stddev=0.1))
+B4 = tf.Variable(tf.constant(0.1, tf.float32, [N]))
+W5 = tf.Variable(tf.truncated_normal([N, IMAGE_RESULT], stddev=0.1))
+B5 = tf.Variable(tf.constant(0.1, tf.float32, [IMAGE_RESULT]))
 
-def variable_summaries(var):
-    with tf.name_scope('summaries'):
-        mean = tf.reduce_mean(var)
-    tf.summary.scalar('mean', mean)
-    with tf.name_scope('stddev'):
-        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-    tf.summary.scalar('stddev', stddev)
-    tf.summary.scalar('max', tf.reduce_max(var))
-    tf.summary.scalar('min', tf.reduce_min(var))
-    tf.summary.histogram('histogram', var)
+# The model
+stride = 1  # output is 28x28
+Y1 = tf.nn.relu(tf.nn.conv2d(X, W1, strides=[1, stride, stride, 1], padding='SAME') + B1)
+stride = 2  # output is 14x14
+Y2 = tf.nn.relu(tf.nn.conv2d(Y1, W2, strides=[1, stride, stride, 1], padding='SAME') + B2)
+stride = 2  # output is 7x7
+Y3 = tf.nn.relu(tf.nn.conv2d(Y2, W3, strides=[1, stride, stride, 1], padding='SAME') + B3)
 
+# reshape the output from the third convolution for the fully connected layer
+YY = tf.reshape(Y3, shape=[-1, 7 * 7 * M])
 
-def multilayer_network(x, hidden_layers):
-    previous_size = IMAGE_PIXELS
-    previous_layer = x
-    for layer in hidden_layers:
-        layer_size = layer['neurons']
-        layer['weights'] = tf.Variable(tf.random_normal([previous_size, layer_size]))
-        layer['biases'] = tf.Variable(tf.random_normal([layer_size]))
-
-        layer['predict'] = tf.add(tf.matmul(previous_layer, layer['weights']), layer['biases'])
-
-        if 'activation_function' in layer:
-            if layer['activation_function'] == 'sigmoid':
-                layer['predict'] = tf.sigmoid(layer['predict'])
-            elif layer['activation_function'] == 'tanh':
-                layer['predict'] = tf.tanh(layer['predict'])
-            elif layer['activation_function'] == 'softmax':
-                layer['predict'] = tf.nn.softmax(layer['predict'])
-
-        if 'dropout' in layer:
-            dropout = tf.constant(layer['dropout'])
-            layer['predict'] = tf.nn.dropout(layer['predict'], dropout)
-
-        variable_summaries(layer['weights'])
-        variable_summaries(layer['biases'])
-        tf.summary.histogram('pre_activations', layer['predict'])
-
-        previous_size = layer_size
-        previous_layer = layer['predict']
-
-    return hidden_layers[-1]['predict']
-
-
-# Construct model
-predict = multilayer_network(x, hidden_layers)
+Y4 = tf.nn.relu(tf.matmul(YY, W4) + B4)
+YY4 = tf.nn.dropout(Y4, pkeep)
+Ylogits = tf.matmul(YY4, W5) + B5
+Y = tf.nn.softmax(Ylogits)
 
 # Add to the Graph the Ops for loss calculation.
-loss = tf.contrib.losses.softmax_cross_entropy(predict, y)
-tf.summary.scalar('cross_entropy', loss)
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=Ylogits, labels=Y_)
+cross_entropy = tf.reduce_mean(cross_entropy)*100
 
-# Add to the Graph the Ops that calculate and apply gradients.
-train_op = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
+# accuracy of the trained model, between 0 (worst) and 1 (best)
+correct_prediction = tf.equal(tf.argmax(Y, 1), tf.argmax(Y_, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+# training step, the learning rate is a placeholder
+train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
 
 # Create a session for running Ops on the Graph.
 sess = tf.InteractiveSession()
-
-merged = tf.summary.merge_all()
-train_writer = tf.summary.FileWriter('./train', sess.graph)
-
 tf.global_variables_initializer().run()
 saver = tf.train.Saver()
 
@@ -105,7 +73,7 @@ saver = tf.train.Saver()
 def get_test_images(path):
     images = []
     for filename in glob.iglob(path, recursive=True):
-        image = Image.open(filename)
+        image = Image.open(filename).convert('1')
         image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
         images.append(np.array(image))
     images = np.array(images)
@@ -131,7 +99,7 @@ def get_training_images_and_labels(path):
 
     for label, filenames in get_all_image_training(path).items():
         for filename in filenames:
-            image = Image.open(filename)
+            image = Image.open(filename).convert('1')
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
             train_images.append(np.array(image))
             train_labels.append(int(label))
@@ -146,6 +114,7 @@ def get_training_images_and_labels(path):
         zero_labels[i][train_labels[i]] = 1
 
     return train_images, zero_labels
+
 
 def get_pebble_count(predictions):
     return np.argmax(predictions[0])
@@ -165,12 +134,21 @@ def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
 
     # Train
-    for _ in range(FLAGS.max_steps):
-        summary = sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
-        train_writer.add_summary(summary, _)
+    for i in range(2000):
+        # learning rate decay
+        max_learning_rate = 0.003
+        min_learning_rate = 0.0001
+        decay_speed = 2000.0
+        learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
+
+        a, c, im, w, b = sess.run([accuracy, cross_entropy, allweights, allbiases], {X: train_images, Y_: train_labels, pkeep: 1.0})
+        print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
+
+        # the backpropagation training step
+        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
 
     saver.save(sess, './saved_graphs/awale')
-    print("Saving session graph")
+    print("Saving session graph and animate")
 
 
 def display_count_pebble():
