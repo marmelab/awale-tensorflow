@@ -32,7 +32,7 @@ B2 = tf.Variable(tf.ones([L])/IMAGE_RESULT)
 W3 = tf.Variable(tf.truncated_normal([4, 4, L, M], stddev=0.1))
 B3 = tf.Variable(tf.ones([M])/IMAGE_RESULT)
 
-W4 = tf.Variable(tf.truncated_normal([7 * 7 * M, N], stddev=0.1))
+W4 = tf.Variable(tf.truncated_normal([25 * 25 * M, N], stddev=0.1))
 B4 = tf.Variable(tf.ones([N])/IMAGE_RESULT)
 W5 = tf.Variable(tf.truncated_normal([N, IMAGE_RESULT], stddev=0.1))
 B5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
@@ -46,7 +46,7 @@ stride = 2  # output is 25x25
 Y3 = tf.nn.relu(tf.nn.conv2d(Y2, W3, strides=[1, stride, stride, 1], padding='SAME') + B3)
 
 # reshape the output from the third convolution for the fully connected layer
-YY = tf.reshape(Y3, shape=[-1, 7 * 7 * M])
+YY = tf.reshape(Y3, shape=[-1, 25 * 25 * M])
 
 Y4 = tf.nn.relu(tf.matmul(YY, W4) + B4)
 Ylogits = tf.matmul(Y4, W5) + B5
@@ -130,7 +130,10 @@ def restore_session():
 
 
 def run_training():
+    print(X)
+
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
+    train_images = np.reshape(train_images, (636, 100, 100, 1))
 
     # Train
     for i in range(2000):
@@ -145,7 +148,7 @@ def run_training():
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
 
         # the backpropagation training step
-        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
+        # sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
 
     saver.save(sess, './saved_graphs/awale')
     print("Saving session graph and animate")
