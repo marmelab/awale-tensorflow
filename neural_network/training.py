@@ -130,8 +130,6 @@ def restore_session():
 
 
 def run_training():
-    print(X)
-
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
     train_images = np.reshape(train_images, (636, 100, 100, 1))
 
@@ -148,7 +146,7 @@ def run_training():
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
 
         # the backpropagation training step
-        # sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
+        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
 
     saver.save(sess, './saved_graphs/awale')
     print("Saving session graph and animate")
