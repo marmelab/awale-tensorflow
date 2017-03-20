@@ -15,8 +15,6 @@ X = tf.placeholder(tf.float32, [None, IMAGE_SIZE, IMAGE_SIZE, 1])
 Y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 # variable learning rate
 lr = tf.placeholder(tf.float32)
-# Probability of keeping a node during dropout = 1.0 at test time (no dropout) and 0.75 at training time
-pkeep = tf.placeholder(tf.float32)
 
 # three convolutional layers with their channel counts, and a
 # fully connected layer (tha last layer has 16 softmax neurons)
@@ -143,11 +141,11 @@ def run_training():
         learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
         # allweights, allbiases
-        a, c = sess.run([accuracy, cross_entropy], {X: train_images, Y_: train_labels, pkeep: 1.0})
+        a, c = sess.run([accuracy, cross_entropy], {X: train_images, Y_: train_labels})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
 
         # the backpropagation training step
-        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
+        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate})
 
     saver.save(sess, './saved_graphs/awale')
     print("Saving session graph")
