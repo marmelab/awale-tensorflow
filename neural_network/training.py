@@ -131,8 +131,6 @@ def restore_session():
 
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
-    print(train_images.shape)
-    print(train_labels.shape)
 
     # Train
     for i in range(2000):
