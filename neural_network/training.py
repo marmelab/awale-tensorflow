@@ -20,37 +20,36 @@ pkeep = tf.placeholder(tf.float32)
 
 # three convolutional layers with their channel counts, and a
 # fully connected layer (tha last layer has 16 softmax neurons)
-K = 6  # first convolutional layer output depth
-L = 12  # second convolutional layer output depth
-M = 24  # third convolutional layer
+K = 4  # first convolutional layer output depth
+L = 8  # second convolutional layer output depth
+M = 12  # third convolutional layer
 N = 200  # fully connected layer
 
-W1 = tf.Variable(tf.truncated_normal([6, 6, 1, K], stddev=0.1))  # 6x6 patch, 1 input channel, K output channels
-B1 = tf.Variable(tf.constant(0.1, tf.float32, [K]))
+W1 = tf.Variable(tf.truncated_normal([5, 5, 1, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
+B1 = tf.Variable(tf.ones([K])/IMAGE_RESULT)
 W2 = tf.Variable(tf.truncated_normal([5, 5, K, L], stddev=0.1))
-B2 = tf.Variable(tf.constant(0.1, tf.float32, [L]))
+B2 = tf.Variable(tf.ones([L])/IMAGE_RESULT)
 W3 = tf.Variable(tf.truncated_normal([4, 4, L, M], stddev=0.1))
-B3 = tf.Variable(tf.constant(0.1, tf.float32, [M]))
+B3 = tf.Variable(tf.ones([M])/IMAGE_RESULT)
 
 W4 = tf.Variable(tf.truncated_normal([7 * 7 * M, N], stddev=0.1))
-B4 = tf.Variable(tf.constant(0.1, tf.float32, [N]))
+B4 = tf.Variable(tf.ones([N])/IMAGE_RESULT)
 W5 = tf.Variable(tf.truncated_normal([N, IMAGE_RESULT], stddev=0.1))
-B5 = tf.Variable(tf.constant(0.1, tf.float32, [IMAGE_RESULT]))
+B5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 
 # The model
-stride = 1  # output is 28x28
+stride = 1  # output is 100*100
 Y1 = tf.nn.relu(tf.nn.conv2d(X, W1, strides=[1, stride, stride, 1], padding='SAME') + B1)
-stride = 2  # output is 14x14
+stride = 2  # output is 50*50
 Y2 = tf.nn.relu(tf.nn.conv2d(Y1, W2, strides=[1, stride, stride, 1], padding='SAME') + B2)
-stride = 2  # output is 7x7
+stride = 2  # output is 25x25
 Y3 = tf.nn.relu(tf.nn.conv2d(Y2, W3, strides=[1, stride, stride, 1], padding='SAME') + B3)
 
 # reshape the output from the third convolution for the fully connected layer
 YY = tf.reshape(Y3, shape=[-1, 7 * 7 * M])
 
 Y4 = tf.nn.relu(tf.matmul(YY, W4) + B4)
-YY4 = tf.nn.dropout(Y4, pkeep)
-Ylogits = tf.matmul(YY4, W5) + B5
+Ylogits = tf.matmul(Y4, W5) + B5
 Y = tf.nn.softmax(Ylogits)
 
 # Add to the Graph the Ops for loss calculation.
@@ -132,6 +131,8 @@ def restore_session():
 
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
+    print(train_images.shape)
+    print(train_labels.shape)
 
     # Train
     for i in range(2000):
@@ -141,7 +142,8 @@ def run_training():
         decay_speed = 2000.0
         learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
-        a, c, im, w, b = sess.run([accuracy, cross_entropy, allweights, allbiases], {X: train_images, Y_: train_labels, pkeep: 1.0})
+        # allweights, allbiases
+        a, c = sess.run([accuracy, cross_entropy], {X: train_images, Y_: train_labels, pkeep: 1.0})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
 
         # the backpropagation training step
