@@ -11,7 +11,7 @@ IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 # input X: 100 grayscale images, the first dimension will index the images in the mini-batch
 X = tf.placeholder(tf.float32, [None, IMAGE_SIZE, IMAGE_SIZE, 1])
-# correct answers will go here
+# correct answers will go here / my label
 Y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 # variable learning rate
 lr = tf.placeholder(tf.float32)
@@ -48,6 +48,8 @@ YY = tf.reshape(Y3, shape=[-1, 25 * 25 * M])
 
 Y4 = tf.nn.relu(tf.matmul(YY, W4) + B4)
 Ylogits = tf.matmul(Y4, W5) + B5
+
+# Label predict by neural network
 Y = tf.nn.softmax(Ylogits)
 
 # Add to the Graph the Ops for loss calculation.
@@ -55,8 +57,8 @@ cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=Ylogits, labels=Y
 cross_entropy = tf.reduce_mean(cross_entropy)*100
 
 # accuracy of the trained model, between 0 (worst) and 1 (best)
-correct_prediction = tf.equal(tf.argmax(Y, 1), tf.argmax(Y_, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+is_correct_prediction = tf.equal(tf.argmax(Y, 1), tf.argmax(Y_, 1))
+accuracy = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32))
 
 # training step, the learning rate is a placeholder
 train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
@@ -140,7 +142,6 @@ def run_training():
         decay_speed = 2000.0
         learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
-        # allweights, allbiases
         a, c = sess.run([accuracy, cross_entropy], {X: train_images, Y_: train_labels})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
 
