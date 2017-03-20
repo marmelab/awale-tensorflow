@@ -131,10 +131,10 @@ def restore_session():
 
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
-    train_images = np.reshape(train_images, (636, 100, 100, 1))
+    train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
-    for i in range(2000):
+    for i in range(60):
         # learning rate decay
         max_learning_rate = 0.003
         min_learning_rate = 0.0001
@@ -154,17 +154,15 @@ def run_training():
 
 def display_count_pebble():
     test_images = get_test_images('board_images/*.png')
+    test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     success = restore_session()
     if not success:
         return
 
     # Run trained model
-    correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    tf.summary.scalar('accuracy', accuracy)
-
-    predictions = sess.run(predict, feed_dict={x: test_images})
+    predictions = sess.run(accuracy, {X: test_images})
+    print(predictions)
     number_pebble = get_pebble_count(predictions)
     print(number_pebble)
 
