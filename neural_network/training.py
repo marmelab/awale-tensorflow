@@ -75,8 +75,6 @@ def multilayer_network(x, hidden_layers):
         variable_summaries(layer['weights'])
         variable_summaries(layer['biases'])
         tf.summary.histogram('pre_activations', layer['predict'])
-        activations = tf.nn.relu(layer['predict'], name='activation')
-        tf.summary.histogram('activations', activations)
 
         previous_size = layer_size
         previous_layer = layer['predict']
