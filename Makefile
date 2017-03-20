@@ -4,6 +4,9 @@ install:
 run:
 	python3 launcher.py $(COMMAND_ARGS)
 
+board:
+	tensorboard --logdir=./train
+
 lint:
 	pep8
 

@@ -10,27 +10,17 @@ FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 2000, 'Number of steps to run trainer.')
 
-NUM_CLASSES = 2
 IMAGE_RESULT = 16
 IMAGE_SIZE = 100
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE * 3
 
 hidden_layers = [
     {
-        'neurons': 67,
+        'neurons': 128,
         'activation_function': 'sigmoid',
     },
     {
-        'neurons': 67,
-        'activation_function': 'sigmoid',
-    },
-    {
-        'neurons': 67,
-        'activation_function': 'sigmoid',
-    },
-    {
-        'neurons': 67,
-        'dropout': 0.75,
+        'neurons': 32,
         'activation_function': 'sigmoid',
     },
     {
@@ -46,6 +36,18 @@ y = tf.add(tf.matmul(x, W), b)
 
 # Define loss and optimizer
 y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+
+
+def variable_summaries(var):
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+    tf.summary.scalar('mean', mean)
+    with tf.name_scope('stddev'):
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.summary.scalar('stddev', stddev)
+    tf.summary.scalar('max', tf.reduce_max(var))
+    tf.summary.scalar('min', tf.reduce_min(var))
+    tf.summary.histogram('histogram', var)
 
 
 def multilayer_network(x, hidden_layers):
@@ -70,6 +72,10 @@ def multilayer_network(x, hidden_layers):
             dropout = tf.constant(layer['dropout'])
             layer['predict'] = tf.nn.dropout(layer['predict'], dropout)
 
+        variable_summaries(layer['weights'])
+        variable_summaries(layer['biases'])
+        tf.summary.histogram('pre_activations', layer['predict'])
+
         previous_size = layer_size
         previous_layer = layer['predict']
 
@@ -81,12 +87,17 @@ predict = multilayer_network(x, hidden_layers)
 
 # Add to the Graph the Ops for loss calculation.
 loss = tf.contrib.losses.softmax_cross_entropy(predict, y)
+tf.summary.scalar('cross_entropy', loss)
 
 # Add to the Graph the Ops that calculate and apply gradients.
 train_op = tf.train.GradientDescentOptimizer(FLAGS.learning_rate).minimize(loss)
 
 # Create a session for running Ops on the Graph.
 sess = tf.InteractiveSession()
+
+merged = tf.summary.merge_all()
+train_writer = tf.summary.FileWriter('./train', sess.graph)
+
 tf.global_variables_initializer().run()
 saver = tf.train.Saver()
 
@@ -155,7 +166,8 @@ def run_training():
 
     # Train
     for _ in range(FLAGS.max_steps):
-        sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
+        summary = sess.run(train_op, feed_dict={x: train_images, y_: train_labels})
+        train_writer.add_summary(summary, _)
 
     saver.save(sess, './saved_graphs/awale')
     print("Saving session graph")
