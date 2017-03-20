@@ -64,8 +64,9 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
 
 # Create a session for running Ops on the Graph.
-sess = tf.InteractiveSession()
-tf.global_variables_initializer().run()
+init = tf.global_variables_initializer()
+sess = tf.Session()
+sess.run(init)
 saver = tf.train.Saver()
 
 
@@ -134,7 +135,7 @@ def run_training():
     train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
-    for i in range(60):
+    for i in range(100):
         # learning rate decay
         max_learning_rate = 0.003
         min_learning_rate = 0.0001
@@ -149,7 +150,7 @@ def run_training():
         sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate, pkeep: 0.75})
 
     saver.save(sess, './saved_graphs/awale')
-    print("Saving session graph and animate")
+    print("Saving session graph")
 
 
 def display_count_pebble():
@@ -161,20 +162,18 @@ def display_count_pebble():
         return
 
     # Run trained model
-    predictions = sess.run(accuracy, {X: test_images})
-    print(predictions)
-    number_pebble = get_pebble_count(predictions)
+    a = sess.run(Ylogits, {X: test_images})
+    number_pebble = get_pebble_count(a)
     print(number_pebble)
 
 
 def display_accuracy():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
+    train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     success = restore_session()
     if not success:
         return
 
     # Test trained model
-    correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(y_, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    print(sess.run(accuracy, feed_dict={x: train_images, y_: train_labels}))
+    print(sess.run(accuracy, {X: train_images, Y_: train_labels}))
