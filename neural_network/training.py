@@ -62,15 +62,16 @@ accuracy = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32))
 train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
 
 # Create a session for running Ops on the Graph.
-init = tf.global_variables_initializer()
-sess = tf.Session()
-sess.run(init)
+initialize = tf.global_variables_initializer()
+session = tf.Session()
+session.run(initialize)
 saver = tf.train.Saver()
 
 
 def get_test_images(path):
     images = []
     for filename in glob.iglob(path, recursive=True):
+        # Open file and convert to grayscale
         image = Image.open(filename).convert('1')
         image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
         images.append(np.array(image))
@@ -97,6 +98,7 @@ def get_training_images_and_labels(path):
 
     for label, filenames in get_all_image_training(path).items():
         for filename in filenames:
+            # Open file and convert to grayscale
             image = Image.open(filename).convert('1')
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
             train_images.append(np.array(image))
@@ -120,7 +122,7 @@ def get_pebble_count(predictions):
 
 def restore_session():
     try:
-        saver.restore(sess, './saved_graphs/awale')
+        saver.restore(session, './saved_graphs/awale')
         print("Restored graph file")
         return True
     except Exception:
@@ -141,13 +143,13 @@ def run_training():
         # learning rate
         lr = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
-        a, c = sess.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
+        a, c = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(lr) + ")")
 
         # the backpropagation training step
-        sess.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: lr})
+        session.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: lr})
 
-    saver.save(sess, './saved_graphs/awale')
+    saver.save(session, './saved_graphs/awale')
     print("Saving session graph")
 
 
@@ -160,7 +162,7 @@ def display_count_pebble():
         return
 
     # Run trained model
-    predictions = sess.run(label_full, {grayscale_images: test_images})
+    predictions = session.run(label_full, {grayscale_images: test_images})
     number_pebble = get_pebble_count(predictions)
     print(number_pebble)
 
@@ -174,4 +176,4 @@ def display_accuracy():
         return
 
     # Test trained model
-    print(sess.run(accuracy, {grayscale_images: train_images, label_images: train_labels}))
+    print(session.run(accuracy, {grayscale_images: train_images, label_images: train_labels}))
