@@ -130,18 +130,22 @@ def restore_session():
         return False
 
 
+def get_learning_rate(index_training):
+    # learning rate decay
+    max_learning_rate = 0.003
+    min_learning_rate = 0.0001
+    decay_speed = 2000.0
+    return min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-index_training/decay_speed)
+
+
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
     train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
     for i in range(100):
-        # learning rate decay
-        max_learning_rate = 0.003
-        min_learning_rate = 0.0001
-        decay_speed = 2000.0
         # learning rate
-        lr = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
+        lr = get_learning_rate(i)
 
         a, c = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
         print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(lr) + ")")
