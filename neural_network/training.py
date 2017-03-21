@@ -10,57 +10,56 @@ IMAGE_SIZE = 100
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 # input X: 100 grayscale images, the first dimension will index the images in the mini-batch
-X = tf.placeholder(tf.float32, [None, IMAGE_SIZE, IMAGE_SIZE, 1])
+grayscale_images = tf.placeholder(tf.float32, [None, IMAGE_SIZE, IMAGE_SIZE, 1])
 # correct answers will go here / my label
-Y_ = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
+label_images = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 # variable learning rate
-lr = tf.placeholder(tf.float32)
+learning_rate = tf.placeholder(tf.float32)
 
-# three convolutional layers with their channel counts, and a
-# fully connected layer (tha last layer has 16 softmax neurons)
-K = 4  # first convolutional layer output depth
-L = 8  # second convolutional layer output depth
-M = 12  # third convolutional layer
-N = 200  # fully connected layer
+# three convolutional layers with their channel counts and a fully connected layer
+first_convolution = 4
+second_convolution = 8
+third_convolution = 12
+fully_connected_layer = 200
 
-W1 = tf.Variable(tf.truncated_normal([5, 5, 1, K], stddev=0.1))  # 5x5 patch, 1 input channel, K output channels
-B1 = tf.Variable(tf.ones([K])/IMAGE_RESULT)
-W2 = tf.Variable(tf.truncated_normal([5, 5, K, L], stddev=0.1))
-B2 = tf.Variable(tf.ones([L])/IMAGE_RESULT)
-W3 = tf.Variable(tf.truncated_normal([4, 4, L, M], stddev=0.1))
-B3 = tf.Variable(tf.ones([M])/IMAGE_RESULT)
+weights_1 = tf.Variable(tf.truncated_normal([5, 5, 1, first_convolution], stddev=0.1))  # 5x5 patch, 1 input channel, first_convolution output channels
+bias_1 = tf.Variable(tf.ones([first_convolution])/IMAGE_RESULT)
+weights_2 = tf.Variable(tf.truncated_normal([5, 5, first_convolution, second_convolution], stddev=0.1))
+bias_2 = tf.Variable(tf.ones([second_convolution])/IMAGE_RESULT)
+weights_3 = tf.Variable(tf.truncated_normal([4, 4, second_convolution, third_convolution], stddev=0.1))
+bias_3 = tf.Variable(tf.ones([third_convolution])/IMAGE_RESULT)
 
-W4 = tf.Variable(tf.truncated_normal([25 * 25 * M, N], stddev=0.1))
-B4 = tf.Variable(tf.ones([N])/IMAGE_RESULT)
-W5 = tf.Variable(tf.truncated_normal([N, IMAGE_RESULT], stddev=0.1))
-B5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
+weights_4 = tf.Variable(tf.truncated_normal([25 * 25 * third_convolution, fully_connected_layer], stddev=0.1))
+bias_4 = tf.Variable(tf.ones([fully_connected_layer])/IMAGE_RESULT)
+weights_5 = tf.Variable(tf.truncated_normal([fully_connected_layer, IMAGE_RESULT], stddev=0.1))
+bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 
 # The model
 stride = 1  # output is 100*100
-Y1 = tf.nn.relu(tf.nn.conv2d(X, W1, strides=[1, stride, stride, 1], padding='SAME') + B1)
+layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
 stride = 2  # output is 50*50
-Y2 = tf.nn.relu(tf.nn.conv2d(Y1, W2, strides=[1, stride, stride, 1], padding='SAME') + B2)
+layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
 stride = 2  # output is 25x25
-Y3 = tf.nn.relu(tf.nn.conv2d(Y2, W3, strides=[1, stride, stride, 1], padding='SAME') + B3)
+layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
-YY = tf.reshape(Y3, shape=[-1, 25 * 25 * M])
-Y4 = tf.nn.relu(tf.matmul(YY, W4) + B4)
+layer_convert_full = tf.reshape(layer_3, shape=[-1, 25 * 25 * third_convolution])
+layer_4 = tf.nn.relu(tf.matmul(layer_convert_full, weights_4) + bias_4)
 
 # Label predict by neural network
-Ylogits = tf.matmul(Y4, W5) + B5
-Y = tf.nn.softmax(Ylogits)
+label_full = tf.matmul(layer_4, weights_5) + bias_5
+label_prediction = tf.nn.softmax(label_full)
 
 # Add to the Graph the Ops for loss calculation.
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=Ylogits, labels=Y_)
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=label_full, labels=label_images)
 cross_entropy = tf.reduce_mean(cross_entropy)*100
 
 # accuracy of the trained model, between 0 (worst) and 1 (best)
-is_correct_prediction = tf.equal(tf.argmax(Y, 1), tf.argmax(Y_, 1))
+is_correct_prediction = tf.equal(tf.argmax(label_prediction, 1), tf.argmax(label_images, 1))
 accuracy = tf.reduce_mean(tf.cast(is_correct_prediction, tf.float32))
 
 # training step, the learning rate is a placeholder
-train_step = tf.train.AdamOptimizer(lr).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
 
 # Create a session for running Ops on the Graph.
 init = tf.global_variables_initializer()
@@ -139,13 +138,14 @@ def run_training():
         max_learning_rate = 0.003
         min_learning_rate = 0.0001
         decay_speed = 2000.0
-        learning_rate = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
+        # learning rate
+        lr = min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-i/decay_speed)
 
-        a, c = sess.run([accuracy, cross_entropy], {X: train_images, Y_: train_labels})
-        print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(learning_rate) + ")")
+        a, c = sess.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
+        print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(lr) + ")")
 
         # the backpropagation training step
-        sess.run(train_step, {X: train_images, Y_: train_labels, lr: learning_rate})
+        sess.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: lr})
 
     saver.save(sess, './saved_graphs/awale')
     print("Saving session graph")
@@ -160,8 +160,8 @@ def display_count_pebble():
         return
 
     # Run trained model
-    a = sess.run(Ylogits, {X: test_images})
-    number_pebble = get_pebble_count(a)
+    predictions = sess.run(label_full, {grayscale_images: test_images})
+    number_pebble = get_pebble_count(predictions)
     print(number_pebble)
 
 
@@ -174,4 +174,4 @@ def display_accuracy():
         return
 
     # Test trained model
-    print(sess.run(accuracy, {X: train_images, Y_: train_labels}))
+    print(sess.run(accuracy, {grayscale_images: train_images, label_images: train_labels}))
