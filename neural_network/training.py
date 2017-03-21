@@ -145,13 +145,13 @@ def run_training():
     # Train
     for i in range(100):
         # learning rate
-        lr = get_learning_rate(i)
+        learning_rate_training = get_learning_rate(i)
 
-        a, c = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
-        print(str(i) + ": accuracy:" + str(a) + " loss: " + str(c) + " (lr:" + str(lr) + ")")
+        accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
+        print(str(i) + ": accuracy:" + str(accuracy_result) + " loss: " + str(cross_entropy_result) + " (lr:" + str(learning_rate_training) + ")")
 
         # the backpropagation training step
-        session.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: lr})
+        session.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: learning_rate_training})
 
     saver.save(session, './saved_graphs/awale')
     print("Saving session graph")
