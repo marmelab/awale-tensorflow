@@ -37,9 +37,9 @@ bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 # The model
 stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
-stride = 5  # output is 20*20
+stride = 5  # output is 50*50
 layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
-stride = 5  # output is 4*4
+stride = 5  # output is 25*25
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
@@ -140,23 +140,47 @@ def get_learning_rate(index_training):
     return min_learning_rate + (max_learning_rate - min_learning_rate) * math.exp(-index_training/decay_speed)
 
 
+def get_next_batch(images, labels, batch_size, index_in_epoch):
+    num_examples = len(images)
+    start = index_in_epoch
+    if start + batch_size > num_examples:
+        rest_num_examples = num_examples - start
+        images_rest_part = images[start:num_examples]
+        labels_rest_part = labels[start:num_examples]
+        start = 0
+        index_in_epoch = batch_size - rest_num_examples
+        end = index_in_epoch
+        images_new_part = images[start:end]
+        labels_new_part = labels[start:end]
+        return np.concatenate((images_rest_part, images_new_part), axis=0), np.concatenate((labels_rest_part, labels_new_part), axis=0), index_in_epoch
+    else:
+        index_in_epoch += batch_size
+        end = index_in_epoch
+        return images[start:end], labels[start:end], index_in_epoch
+
+
 def run_training():
-    train_images, train_labels = get_training_images_and_labels('images/**/*.png')
+    index_in_epoch = 0
+    all_train_images, all_train_labels = get_training_images_and_labels('images/**/*.png')
+    all_train_images = np.reshape(all_train_images, (len(all_train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
     test_images, test_labels = get_training_images_and_labels('images_train/**/*.png')
-    train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
-    for i in range(100):
+    for i in range(300):
         # learning rate
         learning_rate_training = get_learning_rate(i)
 
-        if i % 100 == 0:
+        train_images, train_labels, index_in_epoch = get_next_batch(all_train_images, all_train_labels, 100, index_in_epoch)
+        # train_images = all_train_images
+        # train_labels = all_train_labels
+
+        if i % 10 == 0:
             accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
             print(str(i) + ": accuracy:" + str(accuracy_result) + " loss: " + str(cross_entropy_result) + " (lr:" + str(learning_rate_training) + ")")
 
-        if i % 20 == 0:
-            accuracy_result, cross_entropy_result = sess.run([accuracy, cross_entropy, {grayscale_images: test_images, label_images: test_labels})
+        if i % 100 == 0:
+            accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: test_images, label_images: test_labels})
             print(str(i) + ": ********* epoch " + str(i*100//train_images.shape[0] + 1) + " ********* test accuracy:" + str(accuracy_result) + " test loss: " + str(cross_entropy_result))
 
         # the backpropagation training step
