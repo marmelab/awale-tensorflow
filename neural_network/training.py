@@ -17,9 +17,9 @@ label_images = tf.placeholder(tf.float32, [None, IMAGE_RESULT])
 learning_rate = tf.placeholder(tf.float32)
 
 # three convolutional layers with their channel counts and a fully connected layer
-first_convolution = 4
-second_convolution = 8
-third_convolution = 12
+first_convolution = 20
+second_convolution = 40
+third_convolution = 60
 fully_connected_layer = 200
 
 weights_1 = tf.Variable(tf.truncated_normal([5, 5, 1, first_convolution], stddev=0.1))  # 5x5 patch, 1 input channel, first_convolution output channels
@@ -29,7 +29,7 @@ bias_2 = tf.Variable(tf.ones([second_convolution])/IMAGE_RESULT)
 weights_3 = tf.Variable(tf.truncated_normal([4, 4, second_convolution, third_convolution], stddev=0.1))
 bias_3 = tf.Variable(tf.ones([third_convolution])/IMAGE_RESULT)
 
-weights_4 = tf.Variable(tf.truncated_normal([25 * 25 * third_convolution, fully_connected_layer], stddev=0.1))
+weights_4 = tf.Variable(tf.truncated_normal([4 * 4 * third_convolution, fully_connected_layer], stddev=0.1))
 bias_4 = tf.Variable(tf.ones([fully_connected_layer])/IMAGE_RESULT)
 weights_5 = tf.Variable(tf.truncated_normal([fully_connected_layer, IMAGE_RESULT], stddev=0.1))
 bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
@@ -37,13 +37,13 @@ bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 # The model
 stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
-stride = 2  # output is 50*50
+stride = 5  # output is 20*20
 layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
-stride = 2  # output is 25x25
+stride = 5  # output is 4*4
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
-layer_convert_full = tf.reshape(layer_3, shape=[-1, 25 * 25 * third_convolution])
+layer_convert_full = tf.reshape(layer_3, shape=[-1, 4 * 4 * third_convolution])
 layer_4 = tf.nn.relu(tf.matmul(layer_convert_full, weights_4) + bias_4)
 
 # Label predict by neural network
@@ -70,14 +70,16 @@ saver = tf.train.Saver()
 
 def get_test_images(path):
     images = []
+    filenames = []
     for filename in glob.iglob(path, recursive=True):
         # Open file and convert to grayscale
         image = Image.open(filename).convert('1')
         image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
         images.append(np.array(image))
+        filenames.append(os.path.basename(filename))
     images = np.array(images)
     images = images.reshape(len(images), IMAGE_PIXELS)
-    return images
+    return images, filenames
 
 
 def get_all_image_training(path):
@@ -117,7 +119,7 @@ def get_training_images_and_labels(path):
 
 
 def get_pebble_count(predictions):
-    return np.argmax(predictions[0])
+    return np.argmax(predictions)
 
 
 def restore_session():
@@ -140,15 +142,22 @@ def get_learning_rate(index_training):
 
 def run_training():
     train_images, train_labels = get_training_images_and_labels('images/**/*.png')
+    test_images, test_labels = get_training_images_and_labels('images_train/**/*.png')
     train_images = np.reshape(train_images, (len(train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
+    test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
     for i in range(100):
         # learning rate
         learning_rate_training = get_learning_rate(i)
 
-        accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
-        print(str(i) + ": accuracy:" + str(accuracy_result) + " loss: " + str(cross_entropy_result) + " (lr:" + str(learning_rate_training) + ")")
+        if i % 100 == 0:
+            accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
+            print(str(i) + ": accuracy:" + str(accuracy_result) + " loss: " + str(cross_entropy_result) + " (lr:" + str(learning_rate_training) + ")")
+
+        if i % 20 == 0:
+            accuracy_result, cross_entropy_result = sess.run([accuracy, cross_entropy, {grayscale_images: test_images, label_images: test_labels})
+            print(str(i) + ": ********* epoch " + str(i*100//train_images.shape[0] + 1) + " ********* test accuracy:" + str(accuracy_result) + " test loss: " + str(cross_entropy_result))
 
         # the backpropagation training step
         session.run(train_step, {grayscale_images: train_images, label_images: train_labels, learning_rate: learning_rate_training})
@@ -158,7 +167,7 @@ def run_training():
 
 
 def display_count_pebble():
-    test_images = get_test_images('board_images/*.png')
+    test_images, filenames = get_test_images('board_images/*.png')
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     success = restore_session()
@@ -167,8 +176,9 @@ def display_count_pebble():
 
     # Run trained model
     predictions = session.run(label_full, {grayscale_images: test_images})
-    number_pebble = get_pebble_count(predictions)
-    print(number_pebble)
+    for i, prediction in enumerate(predictions):
+        number_pebble = get_pebble_count(prediction)
+        print(filenames[i], number_pebble)
 
 
 def display_accuracy():

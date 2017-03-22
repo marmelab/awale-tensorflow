@@ -29,7 +29,8 @@ def detect_and_crop_pit(image, number_pebble="None", save=False):
 
 
 def crop_pit(image, number_pebble="None", save=False):
-    path_save_image = os.path.join("images", number_pebble)
+    # path_save_image = os.path.join("images", number_pebble)
+    path_save_image = os.path.join("board_images")
     if not os.path.exists(path_save_image):
         os.makedirs(path_save_image)
 
