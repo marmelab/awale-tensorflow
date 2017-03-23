@@ -21,16 +21,17 @@ learning_rate = tf.placeholder(tf.float32)
 first_convolution = 20
 second_convolution = 40
 third_convolution = 60
-fully_connected_layer = 200
+fully_connected_layer = 500
+last_size_pixel_image = 10
 
 weights_1 = tf.Variable(tf.truncated_normal([5, 5, 1, first_convolution], stddev=0.1))  # 5x5 patch, 1 input channel, first_convolution output channels
 bias_1 = tf.Variable(tf.ones([first_convolution])/IMAGE_RESULT)
 weights_2 = tf.Variable(tf.truncated_normal([5, 5, first_convolution, second_convolution], stddev=0.1))
 bias_2 = tf.Variable(tf.ones([second_convolution])/IMAGE_RESULT)
-weights_3 = tf.Variable(tf.truncated_normal([4, 4, second_convolution, third_convolution], stddev=0.1))
+weights_3 = tf.Variable(tf.truncated_normal([last_size_pixel_image, last_size_pixel_image, second_convolution, third_convolution], stddev=0.1))
 bias_3 = tf.Variable(tf.ones([third_convolution])/IMAGE_RESULT)
 
-weights_4 = tf.Variable(tf.truncated_normal([4 * 4 * third_convolution, fully_connected_layer], stddev=0.1))
+weights_4 = tf.Variable(tf.truncated_normal([last_size_pixel_image * last_size_pixel_image * third_convolution, fully_connected_layer], stddev=0.1))
 bias_4 = tf.Variable(tf.ones([fully_connected_layer])/IMAGE_RESULT)
 weights_5 = tf.Variable(tf.truncated_normal([fully_connected_layer, IMAGE_RESULT], stddev=0.1))
 bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
@@ -40,11 +41,11 @@ stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
 stride = 5  # output is 20*20
 layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
-stride = 5  # output is 4*4
+stride = 2  # output is 10*10 (last_size_pixel_image)
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
-layer_convert_full = tf.reshape(layer_3, shape=[-1, 4 * 4 * third_convolution])
+layer_convert_full = tf.reshape(layer_3, shape=[-1, last_size_pixel_image * last_size_pixel_image * third_convolution])
 layer_4 = tf.nn.relu(tf.matmul(layer_convert_full, weights_4) + bias_4)
 
 # Label predict by neural network
@@ -180,8 +181,6 @@ def run_training():
     all_train_images = np.reshape(all_train_images, (len(all_train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
     test_images, test_labels = get_training_images_and_labels('images_train/**/*.png')
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
-
-    print(all_train_images.shape)
 
     # Train
     for i in range(510):
