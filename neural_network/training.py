@@ -127,7 +127,7 @@ def get_training_images_and_labels(path):
     train_images = train_images.reshape(count_train_images, IMAGE_PIXELS)
 
     train_labels = np.array(train_labels)
-    zero_labels = np.zeros(count_train_images, IMAGE_RESULT)
+    zero_labels = np.zeros((count_train_images, IMAGE_RESULT))
 
     for i, _ in enumerate(train_images):
         zero_labels[i][train_labels[i]] = 1
