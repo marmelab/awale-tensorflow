@@ -37,9 +37,9 @@ bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 # The model
 stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
-stride = 5  # output is 50*50
-layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
 stride = 5  # output is 25*25
+layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
+stride = 5  # output is 4*4
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
@@ -106,6 +106,14 @@ def get_training_images_and_labels(path):
             train_images.append(np.array(image))
             train_labels.append(int(label))
 
+            # rotate image to increase training test
+            train_images.append(np.array(image.rotate(90)))
+            train_labels.append(0)
+            train_images.append(np.array(image.rotate(180)))
+            train_labels.append(0)
+            train_images.append(np.array(image.rotate(270)))
+            train_labels.append(0)
+
     train_images = np.array(train_images)
     train_images = train_images.reshape(len(train_images), IMAGE_PIXELS)
 
@@ -167,7 +175,7 @@ def run_training():
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
-    for i in range(300):
+    for i in range(500):
         # learning rate
         learning_rate_training = get_learning_rate(i)
 
