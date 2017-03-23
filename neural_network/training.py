@@ -3,6 +3,7 @@ import os
 import math
 import numpy as np
 from PIL import Image
+from PIL import ImageFilter
 import tensorflow as tf
 
 IMAGE_RESULT = 12
@@ -37,7 +38,7 @@ bias_5 = tf.Variable(tf.ones([IMAGE_RESULT])/IMAGE_RESULT)
 # The model
 stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
-stride = 5  # output is 25*25
+stride = 5  # output is 20*20
 layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
 stride = 5  # output is 4*4
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
@@ -94,6 +95,10 @@ def get_all_image_training(path):
     return images_dictionary
 
 
+def rotate_image(image, degree):
+    return np.array(image.rotate(degree))
+
+
 def get_training_images_and_labels(path):
     train_images = []
     train_labels = []
@@ -101,18 +106,20 @@ def get_training_images_and_labels(path):
     for label, filenames in get_all_image_training(path).items():
         for filename in filenames:
             # Open file and convert to grayscale
-            image = Image.open(filename).convert('1')
+            image = Image.open(filename)
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
-            train_images.append(np.array(image))
+            gray_image = image.convert('1')
+            train_images.append(np.array(gray_image))
             train_labels.append(int(label))
 
+            # noise image with rotate to increase training test
+            noise_image = image.filter(ImageFilter.GaussianBlur(2)).convert('1')
+            train_images.extend([rotate_image(noise_image, 90), rotate_image(noise_image, 180), rotate_image(noise_image, 270)])
+            train_labels.extend([int(label), int(label), int(label)])
+
             # rotate image to increase training test
-            train_images.append(np.array(image.rotate(90)))
-            train_labels.append(0)
-            train_images.append(np.array(image.rotate(180)))
-            train_labels.append(0)
-            train_images.append(np.array(image.rotate(270)))
-            train_labels.append(0)
+            train_images.extend([rotate_image(gray_image, 90), rotate_image(gray_image, 180), rotate_image(gray_image, 270)])
+            train_labels.extend([int(label), int(label), int(label)])
 
     train_images = np.array(train_images)
     train_images = train_images.reshape(len(train_images), IMAGE_PIXELS)
@@ -174,14 +181,14 @@ def run_training():
     test_images, test_labels = get_training_images_and_labels('images_train/**/*.png')
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
+    print(all_train_images.shape)
+
     # Train
-    for i in range(500):
+    for i in range(510):
         # learning rate
         learning_rate_training = get_learning_rate(i)
 
         train_images, train_labels, index_in_epoch = get_next_batch(all_train_images, all_train_labels, 100, index_in_epoch)
-        # train_images = all_train_images
-        # train_labels = all_train_labels
 
         if i % 10 == 0:
             accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
