@@ -21,7 +21,7 @@ learning_rate = tf.placeholder(tf.float32)
 first_convolution = 20
 second_convolution = 40
 third_convolution = 60
-fully_connected_layer = 500
+fully_connected_layer = 200
 last_size_pixel_image = 10
 
 weights_1 = tf.Variable(tf.truncated_normal([5, 5, 1, first_convolution], stddev=0.1))  # 5x5 patch, 1 input channel, first_convolution output channels
@@ -88,7 +88,7 @@ def get_all_image_training(path):
     images_dictionary = {}
 
     for filename in glob.iglob(path, recursive=True):
-        directory_name = os.path.basename(os.path.dirname(filename))
+        directory_name = int(os.path.basename(os.path.dirname(filename)))
         if directory_name not in images_dictionary:
             images_dictionary[directory_name] = []
 
@@ -111,22 +111,23 @@ def get_training_images_and_labels(path):
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
             gray_image = image.convert('1')
             train_images.append(np.array(gray_image))
-            train_labels.append(int(label))
+            train_labels.append(label)
 
             # noise image with rotate to increase training test
-            noise_image = image.filter(ImageFilter.GaussianBlur(2)).convert('1')
-            train_images.extend([rotate_image(noise_image, 90), rotate_image(noise_image, 180), rotate_image(noise_image, 270)])
-            train_labels.extend([int(label), int(label), int(label)])
+            # noise_image = image.filter(ImageFilter.GaussianBlur(2)).convert('1')
+            # train_images.extend([np.array(noise_image), rotate_image(noise_image, 90), rotate_image(noise_image, 180), rotate_image(noise_image, 270)])
+            # train_labels.extend([label, label, label, label])
 
             # rotate image to increase training test
             train_images.extend([rotate_image(gray_image, 90), rotate_image(gray_image, 180), rotate_image(gray_image, 270)])
-            train_labels.extend([int(label), int(label), int(label)])
+            train_labels.extend([label, label, label])
 
+    count_train_images = len(train_images)
     train_images = np.array(train_images)
-    train_images = train_images.reshape(len(train_images), IMAGE_PIXELS)
+    train_images = train_images.reshape(count_train_images, IMAGE_PIXELS)
 
     train_labels = np.array(train_labels)
-    zero_labels = np.zeros((len(train_images), IMAGE_RESULT))
+    zero_labels = np.zeros(count_train_images, IMAGE_RESULT)
 
     for i, _ in enumerate(train_images):
         zero_labels[i][train_labels[i]] = 1
