@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from PIL import ImageFilter
 import tensorflow as tf
+import uuid
 
 IMAGE_RESULT = 12
 IMAGE_SIZE = 100
@@ -22,7 +23,7 @@ first_convolution = 20
 second_convolution = 40
 third_convolution = 60
 fully_connected_layer = 200
-last_size_pixel_image = 10
+last_size_pixel_image = 4
 
 weights_1 = tf.Variable(tf.truncated_normal([5, 5, 1, first_convolution], stddev=0.1))  # 5x5 patch, 1 input channel, first_convolution output channels
 bias_1 = tf.Variable(tf.ones([first_convolution])/IMAGE_RESULT)
@@ -41,7 +42,7 @@ stride = 1  # output is 100*100
 layer_1 = tf.nn.relu(tf.nn.conv2d(grayscale_images, weights_1, strides=[1, stride, stride, 1], padding='SAME') + bias_1)
 stride = 5  # output is 20*20
 layer_2 = tf.nn.relu(tf.nn.conv2d(layer_1, weights_2, strides=[1, stride, stride, 1], padding='SAME') + bias_2)
-stride = 2  # output is 10*10 (last_size_pixel_image)
+stride = 5  # output is 4*4 (last_size_pixel_image)
 layer_3 = tf.nn.relu(tf.nn.conv2d(layer_2, weights_3, strides=[1, stride, stride, 1], padding='SAME') + bias_3)
 
 # reshape the output from the third convolution for the fully connected layer
@@ -75,10 +76,11 @@ def get_test_images(path):
     filenames = []
     for filename in glob.iglob(path, recursive=True):
         # Open file and convert to grayscale
-        image = Image.open(filename).convert('1')
+        image = Image.open(filename).convert('L')
         image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
         images.append(np.array(image))
         filenames.append(os.path.basename(filename))
+
     images = np.array(images)
     images = images.reshape(len(images), IMAGE_PIXELS)
     return images, filenames
@@ -89,10 +91,14 @@ def get_all_image_training(path):
 
     for filename in glob.iglob(path, recursive=True):
         directory_name = int(os.path.basename(os.path.dirname(filename)))
+        # if directory_name > 5:
+        #     continue
+
         if directory_name not in images_dictionary:
             images_dictionary[directory_name] = []
 
         images_dictionary[directory_name].append(filename)
+
     return images_dictionary
 
 
@@ -109,18 +115,18 @@ def get_training_images_and_labels(path):
             # Open file and convert to grayscale
             image = Image.open(filename)
             image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
-            gray_image = image.convert('1')
+            gray_image = image.convert('L')
             train_images.append(np.array(gray_image))
             train_labels.append(label)
 
             # noise image with rotate to increase training test
-            # noise_image = image.filter(ImageFilter.GaussianBlur(2)).convert('1')
+            # noise_image = image.filter(ImageFilter.GaussianBlur(2)).convert('L')
             # train_images.extend([np.array(noise_image), rotate_image(noise_image, 90), rotate_image(noise_image, 180), rotate_image(noise_image, 270)])
             # train_labels.extend([label, label, label, label])
 
             # rotate image to increase training test
-            train_images.extend([rotate_image(gray_image, 90), rotate_image(gray_image, 180), rotate_image(gray_image, 270)])
-            train_labels.extend([label, label, label])
+            # train_images.extend([rotate_image(gray_image, 90), rotate_image(gray_image, 180), rotate_image(gray_image, 270)])
+            # train_labels.extend([label, label, label])
 
     count_train_images = len(train_images)
     train_images = np.array(train_images)
@@ -178,18 +184,17 @@ def get_next_batch(images, labels, batch_size, index_in_epoch):
 
 def run_training():
     index_in_epoch = 0
-    all_train_images, all_train_labels = get_training_images_and_labels('images/**/*.png')
+    all_train_images, all_train_labels = get_training_images_and_labels('images/**/**/*.png')
     all_train_images = np.reshape(all_train_images, (len(all_train_images), IMAGE_SIZE, IMAGE_SIZE, 1))
     test_images, test_labels = get_training_images_and_labels('images_train/**/*.png')
     test_images = np.reshape(test_images, (len(test_images), IMAGE_SIZE, IMAGE_SIZE, 1))
 
     # Train
-    for i in range(510):
+    for i in range(710):
         # learning rate
         learning_rate_training = get_learning_rate(i)
 
         train_images, train_labels, index_in_epoch = get_next_batch(all_train_images, all_train_labels, 100, index_in_epoch)
-
         if i % 10 == 0:
             accuracy_result, cross_entropy_result = session.run([accuracy, cross_entropy], {grayscale_images: train_images, label_images: train_labels})
             print(str(i) + ": accuracy:" + str(accuracy_result) + " loss: " + str(cross_entropy_result) + " (lr:" + str(learning_rate_training) + ")")
@@ -230,3 +235,17 @@ def display_accuracy():
 
     # Test trained model
     print(session.run(accuracy, {grayscale_images: train_images, label_images: train_labels}))
+
+
+def transform_picture():
+    directory_path = os.path.join('images', 'images_transform')
+    for filename in glob.iglob('images/**/*.png', recursive=True):
+            directory_name = os.path.basename(os.path.dirname(filename))
+            image = Image.open(filename)
+            image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
+            image = image.rotate(270)
+            # image = image.filter(ImageFilter.GaussianBlur(2))
+            path_save_image = os.path.join(directory_path, directory_name)
+            if not os.path.exists(path_save_image):
+                os.makedirs(path_save_image)
+            image.save(os.path.join(path_save_image, "{}.png".format(uuid.uuid1())), "PNG")
